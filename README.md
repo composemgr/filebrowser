@@ -47,8 +47,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/filebrowser` - Data storage
-- `./rootfs/data/filebrowser` - Data storage
+- `./volumes/config/filebrowser` - Data storage
+- `./volumes/data/filebrowser` - Data storage
 
 ## 🔍 Logging
 

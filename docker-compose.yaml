@@ -16,12 +16,16 @@ services:
     logging: *default-logging
     networks:
       - filebrowser
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:8109:80"
     environment:
       TZ: ${TZ:-America/New_York}
       PUID: ${SERVICE_USER:-1000}
       PGID: ${SERVICE_GROUP:-1000}
+      CONTAINER_NAME: filebrowser-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/config/filebrowser:/config
       - ./volumes/data/filebrowser:/srv
@@ -30,8 +34,28 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://filebrowser-app:80'
+      - 'cloudflare.hostname=filebrowser.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.filebrowser-app.entrypoints=http'
+      - 'traefik.http.routers.filebrowser-app-secure.tls=true'
+      - 'traefik.http.routers.filebrowser-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.filebrowser-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.filebrowser-app.middlewares=filebrowser-app-https-redirect'
+      - 'traefik.http.routers.filebrowser-app-secure.entrypoints=https'
+      - 'traefik.http.routers.filebrowser-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.filebrowser-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.filebrowser-app-secure.service=filebrowser-app'
+      - 'traefik.http.services.filebrowser-app.loadbalancer.server.port=80'
 
 networks:
   filebrowser:
     name: filebrowser
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true

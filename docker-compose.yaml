@@ -1,5 +1,6 @@
 # nginx proxy address - http://172.17.0.1:8109
 
+name: filebrowser
 x-logging: &default-logging
   driver: json-file
   options:
@@ -9,26 +10,28 @@ x-logging: &default-logging
 services:
   filebrowser:
     image: filebrowser/filebrowser:latest
+    pull_policy: always
     container_name: filebrowser-app
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - filebrowser
     ports:
-      - "8109:8109"
+      - "172.17.0.1:8109:80"
     environment:
       TZ: ${TZ:-America/New_York}
       PUID: ${SERVICE_USER:-1000}
       PGID: ${SERVICE_GROUP:-1000}
     volumes:
       - ./volumes/config/filebrowser:/config
-      - ./volumes/data/filebrowser:/data
+      - ./volumes/data/filebrowser:/srv
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8109"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
 
 networks:
   filebrowser:
+    name: filebrowser
     external: false

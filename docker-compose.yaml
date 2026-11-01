@@ -1,61 +1,41 @@
-# nginx proxy address - http://172.17.0.1:8109
+# nginx proxy address - http://172.17.0.1:64170
 
 name: filebrowser
 x-logging: &default-logging
-  driver: json-file
   options:
-    max-size: "5m"
-    max-file: "1"
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
 
 services:
   filebrowser:
     image: filebrowser/filebrowser:latest
-    pull_policy: always
     container_name: filebrowser-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
+    pull_policy: always
     logging: *default-logging
-    networks:
-      - filebrowser
-      - proxy
-      - cloudflare
-    ports:
-      - "172.17.0.1:8109:80"
     environment:
       TZ: ${TZ:-America/New_York}
-      PUID: ${SERVICE_USER:-1000}
-      PGID: ${SERVICE_GROUP:-1000}
       CONTAINER_NAME: filebrowser-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      PUID: ${SERVICE_USER:-1000}
+      PGID: ${SERVICE_GROUP:-1000}
+    ports:
+      - '172.17.0.1:64170:80'
     volumes:
-      - ./volumes/config/filebrowser:/config
-      - ./volumes/data/filebrowser:/srv
+      - './volumes/config/filebrowser:/config'
+      - './volumes/data/filebrowser:/srv'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:80']
       interval: 30s
       timeout: 10s
       retries: 3
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://filebrowser-app:80'
-      - 'cloudflare.hostname=filebrowser.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.filebrowser-app.entrypoints=http'
-      - 'traefik.http.routers.filebrowser-app-secure.tls=true'
-      - 'traefik.http.routers.filebrowser-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.filebrowser-app-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.filebrowser-app.middlewares=filebrowser-app-https-redirect'
-      - 'traefik.http.routers.filebrowser-app-secure.entrypoints=https'
-      - 'traefik.http.routers.filebrowser-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.filebrowser-app-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.filebrowser-app-secure.service=filebrowser-app'
-      - 'traefik.http.services.filebrowser-app.loadbalancer.server.port=80'
+    networks:
+      - filebrowser
 
 networks:
   filebrowser:
     name: filebrowser
     external: false
-  proxy:
-    external: true
-  cloudflare:
-    external: true
